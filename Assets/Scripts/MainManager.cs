@@ -12,20 +12,21 @@ public class MainManager : MonoBehaviour
 
     public Text ScoreText;
     public GameObject GameOverText;
-    
+    public GameObject VictoryText; // Nuevo objeto para mostrar "Victoria"
+
     private bool m_Started = false;
     private int m_Points;
-    
     private bool m_GameOver = false;
+    private int remainingBricks; // Contador de bloques restantes
 
-    
-    // Start is called before the first frame update
     void Start()
     {
         const float step = 0.6f;
         int perLine = Mathf.FloorToInt(4.0f / step);
-        
-        int[] pointCountArray = new [] {1,1,2,2,5,5};
+
+        int[] pointCountArray = new[] { 1, 1, 2, 2, 5, 5 };
+        remainingBricks = LineCount * perLine; // Inicializamos el contador de bloques
+
         for (int i = 0; i < LineCount; ++i)
         {
             for (int x = 0; x < perLine; ++x)
@@ -34,6 +35,7 @@ public class MainManager : MonoBehaviour
                 var brick = Instantiate(BrickPrefab, position, Quaternion.identity);
                 brick.PointValue = pointCountArray[i];
                 brick.onDestroyed.AddListener(AddPoint);
+                brick.onDestroyed.AddListener(CheckVictory); // Comprobamos si ganamos
             }
         }
     }
@@ -66,6 +68,16 @@ public class MainManager : MonoBehaviour
     {
         m_Points += point;
         ScoreText.text = $"Score : {m_Points}";
+    }
+
+    void CheckVictory(int points)
+    {
+        remainingBricks--; // Reducimos la cantidad de bloques restantes
+        if (remainingBricks <= 0) // Si ya no quedan bloques
+        {
+            VictoryText.SetActive(true); // Mostramos el texto de victoria
+            m_GameOver = true; // Habilitamos la opción de reinicio
+        }
     }
 
     public void GameOver()
