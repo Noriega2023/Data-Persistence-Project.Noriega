@@ -59,10 +59,13 @@ public class MainManager : MonoBehaviour
         {
             if (Input.GetKeyDown(KeyCode.Space))
             {
+                // Restaurar velocidad del juego y recargar la escena
+                Time.timeScale = 1f;
                 SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
             }
         }
     }
+
 
     void AddPoint(int point)
     {
@@ -77,8 +80,12 @@ public class MainManager : MonoBehaviour
         {
             VictoryText.SetActive(true); // Mostramos el texto de victoria
             m_GameOver = true; // Habilitamos la opción de reinicio
+
+            // Pausar el tiempo del juego
+            Time.timeScale = 0f;
         }
     }
+
 
     public void GameOver()
     {
