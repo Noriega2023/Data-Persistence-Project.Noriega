@@ -1,11 +1,6 @@
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
-
-
-
+using UnityEngine.SceneManagement;
 
 public class MainManager : MonoBehaviour
 {
@@ -19,26 +14,30 @@ public class MainManager : MonoBehaviour
     public Text HighScoreText;
     public GameObject GameOverText;
     public GameObject VictoryText;
-    public InputField NameInputField;
-    public Button StartButton;
+    public HighScoreManager highScoreManager;
 
+    private string playerName;
     private bool gameStarted = false;
     private int score = 0;
     private bool isGameOver = false;
     private int remainingBricks;
-    private string playerName = "";
-    private List<HighScoreEntry> highScores = new List<HighScoreEntry>();
 
     void Start()
     {
-        Time.timeScale = 0f; // El juego comienza pausado
-        LoadHighScores();
+        // Cargar el nombre y la dificultad guardados desde PlayerPrefs
+        playerName = PlayerPrefs.GetString("PlayerName", "Jugador");
+        int difficulty = PlayerPrefs.GetInt("Difficulty", 0);
+
+        LoadHighScores(); // Cargar las puntuaciones altas
+
+        // Mostrar las puntuaciones altas
         UpdateHighScoreText();
-        InitializeBricks();
-        StartButton.onClick.AddListener(StartGame);
+
+        // Iniciar el juego con la configuración de dificultad
+        InitializeBricks(difficulty);
     }
 
-    private void InitializeBricks()
+    private void InitializeBricks(int difficulty)
     {
         const float step = 0.6f;
         int bricksPerLine = Mathf.FloorToInt(4.0f / step);
@@ -60,13 +59,7 @@ public class MainManager : MonoBehaviour
 
     public void StartGame()
     {
-        if (string.IsNullOrEmpty(NameInputField.text))
-            return;
-
-        playerName = NameInputField.text;
-        NameInputField.gameObject.SetActive(false);
-        StartButton.gameObject.SetActive(false);
-        Time.timeScale = 1f;
+        if (gameStarted) return;
 
         gameStarted = true;
         Ball.transform.SetParent(null);
@@ -81,8 +74,8 @@ public class MainManager : MonoBehaviour
     {
         if (isGameOver && Input.GetKeyDown(KeyCode.Space))
         {
-            Time.timeScale = 1f;
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            // Al presionar espacio, volvemos a la escena de configuración
+            SceneManager.LoadScene("SettingsScene");
         }
     }
 
@@ -104,8 +97,9 @@ public class MainManager : MonoBehaviour
 
     public void GameOver()
     {
+        isGameOver = true;
         GameOverText.SetActive(true);
-        EndGame();
+        highScoreManager.SaveNewScore(playerName, score);
     }
 
     private void EndGame()
@@ -115,52 +109,23 @@ public class MainManager : MonoBehaviour
         SaveHighScore();
     }
 
-    #region High Scores
-
-    [System.Serializable]
-    private class HighScoreEntry
-    {
-        public string Name;
-        public int Score;
-    }
-
     private void SaveHighScore()
     {
-        LoadHighScores();
-        highScores.Add(new HighScoreEntry { Name = playerName, Score = score });
-        highScores = highScores.OrderByDescending(entry => entry.Score).Take(5).ToList();
-
-        PlayerPrefs.SetString("HighScores", JsonUtility.ToJson(new HighScoreList { Scores = highScores }));
-        PlayerPrefs.Save();
-
-        UpdateHighScoreText();
+        highScoreManager.SaveNewScore(playerName, score);
     }
 
+    // Cargar puntuaciones altas
     private void LoadHighScores()
     {
-        if (PlayerPrefs.HasKey("HighScores"))
-        {
-            string json = PlayerPrefs.GetString("HighScores");
-            var loadedScores = JsonUtility.FromJson<HighScoreList>(json);
-            if (loadedScores != null)
-                highScores = loadedScores.Scores;
-        }
+        highScoreManager.LoadHighScores();
     }
 
     private void UpdateHighScoreText()
     {
         HighScoreText.text = "High Scores:\n";
-        foreach (var entry in highScores)
+        foreach (var entry in highScoreManager.GetTopScores())
         {
             HighScoreText.text += $"{entry.Name}: {entry.Score}\n";
         }
     }
-
-    [System.Serializable]
-    private class HighScoreList
-    {
-        public List<HighScoreEntry> Scores;
-    }
-
-    #endregion
 }
